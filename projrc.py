@@ -2,6 +2,7 @@
 #
 # Copyright 2010, 2011 aragost Trifork
 # Copyright 2011, 2012 Angel Ezquerra <angel.ezquerra@gmail.com>
+# Updated 2017         Jeremy Lake <jeremy@trademe.co.nz>
 #
 # This software may be used and distributed according to the terms of
 # the GNU General Public License version 2 or any later version.
@@ -18,18 +19,23 @@ repository.
 """
 
 import os, sys, fnmatch
+import mercurial
 from operator import itemgetter
-from mercurial import hg, extensions, pushkey, config, util, error
+from mercurial import hg, extensions, pushkey, config, util, error, pycompat
 from mercurial import commands, dispatch, cmdutil, localrepo, exchange
 from mercurial.i18n import _
 
-# Compatibility import to handle API changes between 1.8 and 1.9
-try:
-    from mercurial.scmutil import systemrcpath
-    from mercurial.scmutil import userrcpath
-except ImportError:
-    from mercurial.util import system_rcpath as systemrcpath
-    from mercurial.util import user_rcpath as userrcpath
+#systemrcpath imports
+if hasattr(mercurial, "scmutil") and hasattr(mercurial.scmutil, "systemrcpath"): from mercurial.scmutil import systemrcpath
+if hasattr(mercurial, "util") and hasattr(mercurial.util, "system_rcpath"): from mercurial.util import system_rcpath as systemrcpath
+if hasattr(mercurial, "scmwindows") and hasattr(mercurial.scmwindows, "systemrcpath"): from mercurial.scmwindows import systemrcpath
+if hasattr(mercurial, "scmposix") and hasattr(mercurial.scmposix, "systemrcpath"): from mercurial.scmposix import systemrcpath
+
+#userrcpath imports
+if hasattr(mercurial, "scmutil") and hasattr(mercurial.scmutil, "userrcpath"): from mercurial.scmutil import userrcpath
+if hasattr(mercurial, "util") and hasattr(mercurial.util, "user_rcpath"): from mercurial.util import user_rcpath as userrcpath
+if hasattr(mercurial, "scmwindows") and hasattr(mercurial.scmwindows, "userrcpath"): from mercurial.scmwindows import userrcpath
+if hasattr(mercurial, "scmposix") and hasattr(mercurial.scmposix, "userrcpath"): from mercurial.scmposix import userrcpath
 
 # To handle different encoding with pushkey between Mercurial 1.7 and
 # 1.8 the server will send a line beginning with '#\\ ' as the first
@@ -269,7 +275,7 @@ def getallowedkeys(ui):
 def loadprojrc(ui, projrc, root):
     if not os.path.exists(projrc):
         return
-	
+    
     cfg = ui._data(untrusted=False)
 
     pui = ui.copy()
@@ -299,13 +305,7 @@ def loadprojrc(ui, projrc, root):
 
 def readcurrentprojrc(repo):
     """Return the contents of the current projrc file"""
-    try:
-        fp = repo.opener('projrc', 'r')
-        data = fp.read()
-        fp.close()
-    except IOError:
-        data = ""
-    return data
+    return repo_read(repo, 'projrc')
 
 def readprojrc(ui, rpath):
     # Modelled after dispatch._getlocal but reads the projrc settings
@@ -461,13 +461,11 @@ def transferprojrc(ui, repo, other, confirmupdate=None):
                     acceptnewconfig = (action == 0)
                 if acceptnewconfig:
                     # If there are changes and the user accepts them, save the new projrc
-                    fp = repo.opener('projrc', 'w')
-                    fp.write(data)
-                    fp.close()
+                    repo_write(repo, 'projrc', data)
 
                     # and take any transferred settings into account
                     try:
-                        loadprojrc(repo.ui, repo.join('projrc'), repo.root)
+                        loadprojrc(repo.ui, repo_join(repo,'projrc'), repo.root)
                         extensions.loadall(repo.ui)
                         ui.status(_("projrc settings file updated and applied\n"))
                     except IOError:
@@ -477,8 +475,8 @@ def transferprojrc(ui, repo, other, confirmupdate=None):
             ui.warn(_("not saving retrieved projrc file: "
                       "parse error at '%s' on %s\n") % e.args)
     else:
-        if os.path.exists(repo.join('projrc')):
-            os.unlink(repo.join('projrc'))
+        if os.path.exists(repo_join(repo, 'projrc')):
+            os.unlink(repo_join(repo, 'projrc'))
 
 def clone(orig, ui, *args, **kwargs):
     # hg.clone calls hg._update as the very last thing. We need to
@@ -602,41 +600,105 @@ def pushprojrc(repo, key, old, new):
     return False
 
 def listprojrc(repo):
-    if os.path.exists(repo.join('projrc')):
+    if os.path.exists(repo_join(repo, 'projrc')):
         try:
             conf = config.config()
-            conf.read(repo.join('projrc'))
+            conf.read(repo_join(repo, 'projrc'))
             data = ENCODING_CHECK + serializeconfig(conf)
         except error.ParseError, e:
             # Send broken file to client so that it can detect and
             # report the error there.
             print "error"
-            data = repo.opener('projrc').read()
+            data = repo_read(repo, 'projrc')
         return {'data': data.encode('string-escape')}
     else:
         return {}
 
-def extsetup(ui):
 
+def extsetup(ui):
     # Modelled after dispatch._dispatch. We have to re-parse the
     # arguments to find the path to the repository since there is no
     # repo object yet.
-    args = sys.argv[1:]
-    rpath = dispatch._earlygetopt(["-R", "--repository", "--repo"], args)
-    readprojrc(ui, rpath)
+    # extsetup is called after all the extension are loaded, and can be useful in case one extension optionally depends on another extension. Signature:
+    # https://www.mercurial-scm.org/wiki/WritingExtensions#Setup_Callbacks
+    
+    #moved to uisetup
+    #args = sys.argv[1:]
+    #rpath = dispatch._earlygetopt(["-R", "--repository", "--repo"], args)
+    #readprojrc(ui, rpath)
+    
     extensions.loadall(ui)
-    for name, module in extensions.extensions():
-        if name in dispatch._loaded:
-            continue
-        cmdtable = getattr(module, 'cmdtable', {})
-        overrides = [cmd for cmd in cmdtable if cmd in commands.table]
-        if overrides:
-            ui.warn(_("extension '%s' overrides commands: %s\n")
-                    % (name, " ".join(overrides)))
-        commands.table.update(cmdtable)
-        dispatch._loaded.add(name)
+
+    if hasattr(dispatch, "_loaded"):
+        for name, module in extensions.extensions():
+            if name in dispatch._loaded:
+                continue
+            cmdtable = getattr(module, 'cmdtable', {})
+            overrides = [cmd for cmd in cmdtable if cmd in commands.table]
+            if overrides:
+                ui.warn(_("extension '%s' overrides commands: %s\n")
+                        % (name, " ".join(overrides)))
+            commands.table.update(cmdtable)
+            dispatch._loaded.add(name)
+    else:
+
+         #dispatch._loaded was removed in the latest mercurial
+        faux_loaded = set()
+
+        for name in extensions._extensions:
+            faux_loaded.add(name)
+
+        for name, module in extensions.extensions():
+            if name in faux_loaded:
+                continue
+            cmdtable = getattr(module, 'cmdtable', {})
+            overrides = [cmd for cmd in cmdtable if cmd in commands.table]
+            if overrides:
+                ui.warn(_("extension '%s' overrides commands: %s\n")
+                        % (name, " ".join(overrides)))
+            commands.table.update(cmdtable)
+            faux_loaded.add(name)
 
     extensions.wrapfunction(hg, 'clone', clone)
     extensions.wrapfunction(hg, 'incoming', incoming)
     extensions.wrapfunction(exchange, 'pull', pull)
     pushkey.register('projrc', pushprojrc, listprojrc)
+
+def uisetup(ui):
+    # uisetup is called when the extension is first loaded and receives a ui object:
+    # https://www.mercurial-scm.org/wiki/WritingExtensions#Setup_Callbacks
+    # We must force the reading of the projrc in uisetup or any other modules with "def uisetup(ui):" won't have access to projrc until the extsetup callback fires. e.g. ui.config("..
+    args = sys.argv[1:]
+    rpath = dispatch._earlygetopt(["-R", "--repository", "--repo"], args)
+    readprojrc(ui, rpath)
+    
+def repo_join(repo, file):
+    if hasattr(repo, "vfs") and hasattr(repo.vfs, "join"): 
+        return repo.vfs.join(file)
+    else:
+        return repo.join(file)
+
+def repo_write(repo, file, data):
+    if hasattr(repo, "vfs") and hasattr(repo.vfs, "write"): 
+        repo.vfs.write(file, data)
+    else:
+        fp = repo.opener(file, 'w')
+        fp.write(data)
+        fp.close()
+        
+def repo_read(repo, file):
+    
+    data = ""
+    print "read repo"
+    if hasattr(repo, "vfs") and hasattr(repo.vfs, "tryreadlines"): 
+        data = repo.vfs.tryreadlines(file)
+        print data
+    else:
+        try:
+            fp = repo.opener(file, 'r')
+            data = fp.read()
+            fp.close()
+        except IOError:
+            data = ""
+
+    return data
