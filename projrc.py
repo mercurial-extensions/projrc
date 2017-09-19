@@ -27,15 +27,15 @@ from mercurial.i18n import _
 
 #systemrcpath imports
 if hasattr(mercurial, "scmutil") and hasattr(mercurial.scmutil, "systemrcpath"): from mercurial.scmutil import systemrcpath
-if hasattr(mercurial, "util") and hasattr(mercurial.util, "system_rcpath"): from mercurial.util import system_rcpath as systemrcpath
-if hasattr(mercurial, "scmwindows") and hasattr(mercurial.scmwindows, "systemrcpath"): from mercurial.scmwindows import systemrcpath
-if hasattr(mercurial, "scmposix") and hasattr(mercurial.scmposix, "systemrcpath"): from mercurial.scmposix import systemrcpath
+elif hasattr(mercurial, "util") and hasattr(mercurial.util, "system_rcpath"): from mercurial.util import system_rcpath as systemrcpath
+elif hasattr(mercurial, "scmwindows") and hasattr(mercurial.scmwindows, "systemrcpath"): from mercurial.scmwindows import systemrcpath
+elif hasattr(mercurial, "scmposix") and hasattr(mercurial.scmposix, "systemrcpath"): from mercurial.scmposix import systemrcpath
 
 #userrcpath imports
 if hasattr(mercurial, "scmutil") and hasattr(mercurial.scmutil, "userrcpath"): from mercurial.scmutil import userrcpath
-if hasattr(mercurial, "util") and hasattr(mercurial.util, "user_rcpath"): from mercurial.util import user_rcpath as userrcpath
-if hasattr(mercurial, "scmwindows") and hasattr(mercurial.scmwindows, "userrcpath"): from mercurial.scmwindows import userrcpath
-if hasattr(mercurial, "scmposix") and hasattr(mercurial.scmposix, "userrcpath"): from mercurial.scmposix import userrcpath
+elif hasattr(mercurial, "util") and hasattr(mercurial.util, "user_rcpath"): from mercurial.util import user_rcpath as userrcpath
+elif hasattr(mercurial, "scmwindows") and hasattr(mercurial.scmwindows, "userrcpath"): from mercurial.scmwindows import userrcpath
+elif hasattr(mercurial, "scmposix") and hasattr(mercurial.scmposix, "userrcpath"): from mercurial.scmposix import userrcpath
 
 # To handle different encoding with pushkey between Mercurial 1.7 and
 # 1.8 the server will send a line beginning with '#\\ ' as the first
