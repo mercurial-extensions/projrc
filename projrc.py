@@ -412,7 +412,7 @@ def transferprojrc(ui, repo, other, confirmupdate=None):
                 # hg >= 2.3
                 repo = repo.local()
             olddata = readcurrentprojrc(repo)
-
+            
             if olddata != data:
                 def mustconfirm(projrcexists):
                     """Read the projrc.confirm setting.
@@ -688,17 +688,8 @@ def repo_write(repo, file, data):
         
 def repo_read(repo, file):
     
-    data = ""
-    print "read repo"
-    if hasattr(repo, "vfs") and hasattr(repo.vfs, "tryreadlines"): 
-        data = repo.vfs.tryreadlines(file)
-        print data
-    else:
-        try:
-            fp = repo.opener(file, 'r')
-            data = fp.read()
-            fp.close()
-        except IOError:
-            data = ""
-
-    return data
+    # Because the mercurial helper methods keep moving around read the file using pure python methods.
+    try:
+        with open(repo_join(repo,file), "rb") as fo: return ''.join(fo.readlines())
+    except IOError:
+        return ""
