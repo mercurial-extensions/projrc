@@ -4,14 +4,14 @@
 # Copyright 2011, 2012 Angel Ezquerra <angel.ezquerra@gmail.com>
 # Copyright 2017       Jeremy Lake <32113028+mercurial-extensions@users.noreply.github.com>
 #
-# *** project hosted at: https://github.com/mercurial-extensions/projrc/blob/master/projrc.py
+# *** project hosted at: https://github.com/mercurial-extensions/projrc/blob/master/projrc.py ***
 #
 # This software may be used and distributed according to the terms of
 # the GNU General Public License version 2 or any later version.
 
 """distribute and parse project specific settings
 
-This extension makes Mercurial parse a ``.hg/projrc`` file (if it
+This extension makes Mercurial parse a ".hg/projrc" file (if it
 exists) for additional configuration settings.
 
 The file is transferred unconditionally on clone and on pull (but
