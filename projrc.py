@@ -2,7 +2,9 @@
 #
 # Copyright 2010, 2011 aragost Trifork
 # Copyright 2011, 2012 Angel Ezquerra <angel.ezquerra@gmail.com>
-# Updated 2017         Jeremy Lake <jeremy@trademe.co.nz>
+# Copyright 2017       Jeremy Lake <32113028+mercurial-extensions@users.noreply.github.com>
+#
+# *** project hosted at: https://github.com/mercurial-extensions/projrc/blob/master/projrc.py
 #
 # This software may be used and distributed according to the terms of
 # the GNU General Public License version 2 or any later version.
