@@ -23,7 +23,7 @@ repository.
 import os, sys, fnmatch
 import mercurial
 from operator import itemgetter
-from mercurial import hg, extensions, pushkey, config, util, error, pycompat
+from mercurial import hg, extensions, pushkey, config, util, error
 from mercurial import commands, dispatch, cmdutil, localrepo, exchange
 from mercurial.i18n import _
 
