@@ -671,7 +671,9 @@ def uisetup(ui):
     # https://www.mercurial-scm.org/wiki/WritingExtensions#Setup_Callbacks
     # We must force the reading of the projrc in uisetup or any other modules with "def uisetup(ui):" won't have access to projrc until the extsetup callback fires. e.g. ui.config("..
     args = sys.argv[1:]
-    rpath = dispatch._earlygetopt(["-R", "--repository", "--repo"], args)
+    rpath = []
+    if hasattr(dispatch, "_earlygetopt"):
+        rpath = dispatch._earlygetopt(["-R", "--repository", "--repo"], args)
     readprojrc(ui, rpath)
     
 def repo_join(repo, file):
